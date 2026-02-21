@@ -1,0 +1,4 @@
+
+config system
+	option timezone 'CST-8'
+	option zonename 'Asia/Shanghai'
