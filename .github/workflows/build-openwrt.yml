@@ -37,9 +37,12 @@ env:
 jobs:
   build:
     runs-on: ubuntu-24.04
+    outputs:
+      FILE_DATE: ${{ env.FILE_DATE }}
+      RELEASE_URL: ${{ steps.create_release.outputs.url }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Free disk space
         uses: jlumbroso/free-disk-space@main
@@ -169,6 +172,7 @@ jobs:
         run: ls -la "${{ steps.artifacts.outputs.path }}"
 
       - name: Upload firmware to release
+        id: create_release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ inputs.release_tag_prefix }}_${{ env.FILE_DATE }}
@@ -200,3 +204,80 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           retain_days: 14
           keep_minimum_runs: 4
+
+  sync:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      FILE_DATE: ${{ needs.build.outputs.FILE_DATE }}
+      RELEASE_URL: ${{ needs.build.outputs.RELEASE_URL }}
+      DEVICE: ${{ inputs.device }}
+    steps:
+      - name: Update README.md via API
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const path = 'README.md';
+            const device = process.env.DEVICE;
+            const date = process.env.FILE_DATE;
+            const url = process.env.RELEASE_URL;
+  
+            // 构建新行
+            const newLine = `| ${device} | ${date} | [下载](${url}) |`;
+  
+            // 获取当前文件内容及 SHA
+            let content, sha;
+            try {
+              const response = await github.rest.repos.getContent({ owner, repo, path });
+              content = Buffer.from(response.data.content, 'base64').toString('utf8');
+              sha = response.data.sha;
+            } catch (error) {
+              if (error.status === 404) {
+                // 文件不存在，创建默认表格
+                content = '| 设备名 | 最新发布日期 | 下载链接 |\n|--------|--------------|----------|\n';
+              } else {
+                throw error;
+              }
+            }
+  
+            // 解析现有表格（跳过表头分隔行）
+            const lines = content.split('\n');
+            const header = lines[0];
+            const separator = lines[1];
+            const dataLines = lines.slice(2).filter(line => line.trim() !== '');
+  
+            const deviceMap = {};
+            for (const line of dataLines) {
+              const parts = line.split('|').map(p => p.trim());
+              if (parts.length >= 4) {
+                const dev = parts[1];
+                const oldDate = parts[2];
+                const oldUrl = parts[3].match(/\((.*?)\)/)?.[1] || '';
+                deviceMap[dev] = { date: oldDate, url: oldUrl };
+              }
+            }
+  
+            // 更新当前设备
+            deviceMap[device] = { date, url };
+  
+            // 重新生成表格（按设备名排序）
+            const newDataLines = Object.keys(deviceMap)
+              .sort()
+              .map(dev => `| ${dev} | ${deviceMap[dev].date} | [下载](${deviceMap[dev].url}) |`);
+  
+            const newContent = [header, separator, ...newDataLines, ''].join('\n');
+  
+            // 推送更新（如果文件已存在，必须提供 sha 以确保原子性）
+            await github.rest.repos.createOrUpdateFileContents({
+              owner,
+              repo,
+              path,
+              message: `update ${device}`,
+              content: Buffer.from(newContent).toString('base64'),
+              sha: sha,
+            });
