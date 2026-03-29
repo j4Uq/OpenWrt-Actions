@@ -120,12 +120,13 @@ jobs:
           OPENWRT_ARMVIRT: openwrt/bin/targets/armsr/armv8/*rootfs.tar.gz
           KERNEL_REPO_URL: ophub/kernel
           KERNEL_VERSION_NAME: 6.1.y_6.18.y
-          PACKAGE_SOC: diy
-          SCRIPT_DIY_PATH: ${{ inputs.config_dir }}/mk_s905d_n1.sh
+          PACKAGE_SOC: s905d
+          #SCRIPT_DIY_PATH: ${{ inputs.config_dir }}/mk_s905d_n1.sh
           GZIP_IMGS: .xz
           WHOAMI: ${{ github.actor }}
           SW_FLOWOFFLOAD: 0
           SFE_FLOW: 0
+          ENABLE_WIFI_K510: 0
 
       # Generic device (e.g., ACRH17) file organization
       - name: Find firmware directory and organize files
