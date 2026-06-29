@@ -159,21 +159,21 @@ jobs:
         run: |
           if [[ "${{ inputs.device }}" == "N1" ]]; then
             # For N1, the flippy action outputs to PACKAGED_OUTPUTPATH
-            echo "path=${{ env.PACKAGED_OUTPUTPATH }}" >> $GITHUB_OUTPUT
+            echo "path=${{ env.PACKAGED_OUTPUTPATH }}/*.img.*" >> $GITHUB_OUTPUT
           else
             # For other devices, use the path from the firmware directory step
-            echo "path=${{ steps.firmware_dir.outputs.firmware_path }}" >> $GITHUB_OUTPUT
+            echo "path=${{ steps.firmware_dir.outputs.firmware_path }}/*.bin" >> $GITHUB_OUTPUT
           fi
 
-      - name: List firmware files
-        run: ls -la "${{ steps.artifacts.outputs.path }}"
+      #- name: List firmware files
+      #  run: ls -la "${{ steps.artifacts.outputs.path }}"
 
       - name: Upload firmware to release
         id: create_release
         uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ inputs.release_tag_prefix }}_${{ env.FILE_DATE }}
-          files: ${{ steps.artifacts.outputs.path }}/*.*
+          files: ${{ steps.artifacts.outputs.path }}
           fail_on_unmatched_files: true
           body: |
             首次使用建议全新刷写
