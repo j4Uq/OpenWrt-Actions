@@ -67,9 +67,16 @@ jobs:
       - name: Clone source code
         working-directory: /workdir
         run: |
-          git clone $REPO_URL -b $REPO_BRANCH --single-branch --depth=1 openwrt
-          ln -sf /workdir/openwrt $GITHUB_WORKSPACE/openwrt
-          echo "FILE_DATE=$(date +"%Y%m%d%H%M")" >> $GITHUB_ENV
+          if git clone $REPO_URL -b $REPO_BRANCH --single-branch --depth=1 openwrt; then
+            COMMIT_ID=$(git -C openwrt rev-parse --short=7 HEAD)
+            echo "Clone 成功，当前 Commit ID: $COMMIT_ID"
+            ln -sf /workdir/openwrt $GITHUB_WORKSPACE/openwrt
+            echo "FILE_DATE=$(date +"%Y%m%d%H%M")" >> $GITHUB_ENV
+            echo "COMMIT_ID=$COMMIT_ID" >> $GITHUB_ENV
+          else
+            echo "Clone 失败，请检查网络或仓库地址"
+            exit 1
+          fi
 
       - name: Update & install feeds
         run: |
@@ -172,7 +179,7 @@ jobs:
         id: create_release
         uses: softprops/action-gh-release@v3
         with:
-          tag_name: ${{ inputs.release_tag_prefix }}_${{ env.FILE_DATE }}
+          tag_name: ${{ inputs.release_tag_prefix }}_${{ env.FILE_DATE }}_${{ env.COMMIT_ID }}
           files: ${{ steps.artifacts.outputs.path }}
           fail_on_unmatched_files: true
           body: |
