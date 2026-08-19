@@ -2,4 +2,4 @@
 |--------|----------|
 | ACRH17 | [202608200251](https://github.com/j4Uq/OpenWrt-Actions/releases/tag/OpenWrt_ACRH17_202608200251_6081813) |
 | K2P | [202608200249](https://github.com/j4Uq/OpenWrt-Actions/releases/tag/OpenWrt_K2P_202608200249_6081813) |
-| N1 | [202608140301](https://github.com/j4Uq/OpenWrt-Actions/releases/tag/OpenWrt_N1_202608140301_ce4e104) |
+| N1 | [202608200241](https://github.com/j4Uq/OpenWrt-Actions/releases/tag/OpenWrt_N1_202608200241_6081813) |
